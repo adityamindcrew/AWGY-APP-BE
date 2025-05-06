@@ -9,41 +9,55 @@ import { getTwoMinutesFromNow, updateClientInfo } from "../utils/helper"
 
 export const registerUser = async (req: Request, res: Response): Promise<any> => {
     const { email, password, name, address, street, city, postalCode } = req.body
-    console.log("Registration request received:", { email, name })
 
-    // Input validation
     if (!email || !password || !name) {
-        return res.status(400).json({ error: "Email, password, and name are required" })
+        return res.status(400).json({
+            status: res.statusCode === 200,
+            statusCode: res.statusCode, message: "Email, password, and name are required"
+        })
     }
 
     if (!/^[a-zA-Z\s]+$/.test(name)) {
-        return res.status(400).json({ error: "Name must be in words (no numbers)" })
+        return res.status(400).json({
+            status: res.statusCode === 200,
+            statusCode: res.statusCode, message: "Name must be in words (no numbers)"
+        })
     }
 
     if (!/\S+@\S+\.\S+/.test(email)) {
-        return res.status(400).json({ error: "Invalid email format" })
+        return res.status(400).json({
+            status: res.statusCode === 200,
+            statusCode: res.statusCode, message: "Invalid email format"
+        })
     }
 
     if (password.length < 6) {
-        return res.status(400).json({ error: "Password must be at least 6 characters long" })
+        return res.status(400).json({
+            status: res.statusCode === 200,
+            statusCode: res.statusCode, message: "Password must be at least 6 characters long"
+        })
     }
 
     try {
-        // Check if user already exists
         const existingUser = await UserModel.findOne({ email })
 
         if (existingUser) {
-            return res.status(409).json({ error: "Email already exists" })
+            return res.status(409).json({
+                status: res.statusCode === 200,
+                statusCode: res.statusCode,
+                message: "Email already exists",
+            })
         }
-
-        // Get client info from the validated request
         if (!req.clientInfo) {
-            return res.status(400).json({ error: "Client info is required" })
+            return res.status(400).json({
+                status: res.statusCode === 200,
+                statusCode: res.statusCode,
+                message: "Client info is required",
+            })
         }
 
         const clientInfo = req.clientInfo
 
-        // Hash password and create user
         const hashedPassword = await bcrypt.hash(password, 10)
         const newUser = await UserModel.create({
             email,
@@ -57,27 +71,41 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
             clientInfo: {
                 isStaging: clientInfo.isStaging === "true",
                 deviceid: clientInfo.deviceid,
-                lang: Number.parseInt(clientInfo.lang),
                 camefrom: clientInfo.camefrom.toLowerCase() === "ios" ? "ios" : "android",
                 appversion: clientInfo.appversion,
                 lastUpdated: new Date(),
             },
         })
+        newUser.tokenVersion = (newUser.tokenVersion || 0) + 1
+        await newUser.save()
 
-        res.status(201).json({
-            status: res.statusCode,
+        // Generate fresh tokens
+        const accessToken = await authUtils.generateAccessToken(newUser._id.toString(), newUser.tokenVersion)
+        const refreshToken = authUtils.generateToken()
+        res.status(200).json({
+            status: res.statusCode === 201,
+            statusCode: res.statusCode,
             message: "User registered successfully",
             data: {
-                id: newUser._id,
+                userId: newUser._id,
                 name: newUser.name,
                 email: newUser.email,
+                address: newUser.address,
+                street: newUser.street,
+                city: newUser.city,
+                postalCode: newUser.postalCode,
+                accessToken,
+                refreshToken,
+                createdAt: newUser.createdAt,
+                updatedAt: newUser.updatedAt,
             },
         })
     } catch (error: any) {
         console.error("Error during registration:", error)
         res.status(500).json({
-            error: "Failed to register user",
-            details: error.message,
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
+            message: error.message,
         })
     }
 }
@@ -88,8 +116,10 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
 
     if (!email || !password) {
         return res.status(400).json({
-            status: 400,
-            error: "Email and password are required"
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
+            message: "Email and password are required",
+
         })
     }
 
@@ -98,8 +128,10 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         const user = await UserModel.findOne({ email })
         if (!user) {
             return res.status(404).json({
-                status: 404,
-                error: "User not found"
+                status: res.statusCode === 200,
+                statusCode: res.statusCode,
+                message: "User not found",
+
             })
         }
 
@@ -107,8 +139,9 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         const isPasswordValid = await bcrypt.compare(password, user.password)
         if (!isPasswordValid) {
             return res.status(401).json({
-                status: 401,
-                error: "Invalid password"
+                status: res.statusCode === 200,
+                statusCode: res.statusCode,
+                message: "Invalid password",
             })
         }
 
@@ -116,8 +149,9 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         if (!req.clientInfo) {
             console.error("Client info is undefined in login route")
             return res.status(400).json({
-                status: 400,
-                error: "Client info is required"
+                status: res.statusCode === 200,
+                statusCode: res.statusCode,
+                message: "Client info is required",
             })
         }
 
@@ -150,22 +184,30 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
 
         // Return success response with tokens
         return res.status(200).json({
-            status: 200,
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
             message: "Login successful",
-            accessToken,
-            refreshToken,
-            expiresIn: 120, // 2 minutes in seconds
+            expiresIn: 120,
             data: {
-                id: user._id,
+                userId: user._id,
                 name: user.name,
                 email: user.email,
+                address: user.address,
+                street: user.street,
+                city: user.city,
+                postalCode: user.postalCode,
+                profilePicture: user.profilePicture || null,
+                accessToken,
+                refreshToken,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
             },
         })
     } catch (error: any) {
         console.error("Error during login:", error)
         return res.status(500).json({
-            status: 500,
-            error: "Failed to login",
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
             message: "An unexpected error occurred during login.",
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         })
@@ -199,116 +241,20 @@ export const logoutUser = async (req: Request, res: Response) => {
             await user.save()
         }
 
-        res.status(200).json({ message: "Logged out successfully" })
+        res.status(200).json({
+            status: res.statusCode === 200,
+            statusCode: res.statusCode, message: "Logged out successfully"
+        })
     } catch (error: any) {
         console.error("Error during logout:", error)
         res.status(500).json({
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
+            message: error.message,
             error: "Failed to logout",
-            details: error.message,
         })
     }
 }
-
-// export const UserrefreshToken = async (req: Request, res: Response) => {
-//     const { accessToken, refreshToken } = req.body
-
-//     if (!refreshToken) {
-//         return res.status(400).json({ error: "Refresh token is required" })
-//     }
-
-//     // If access token is provided, check if it's expired before refreshing
-//     if (accessToken) {
-//         try {
-//             // Try to verify the token
-//             jwt.verify(accessToken, process.env.JWT_SECRET || "defaultsecret")
-
-//             // If verification succeeds, token is still valid
-//             return res.status(400).json({
-//                 error: "Current access token is still valid",
-//                 message: "Only expired tokens can be refreshed",
-//             })
-//         } catch (error: any) {
-//             // Only proceed with refresh if token is expired
-//             if (error.name !== "TokenExpiredError") {
-//                 return res.status(400).json({
-//                     error: "Invalid access token",
-//                     message: "The provided access token is invalid, not expired",
-//                 })
-//             }
-//             // If token is expired, continue with refresh process
-//         }
-//     }
-
-//     try {
-//         // Find the refresh token in the database
-//         const refreshTokenDoc = await UserToken.findOne({
-//             refreshToken: refreshToken,
-//             isRevoked: false,
-//             refreshExpiresAt: { $gt: new Date() },
-//         })
-
-//         if (!refreshTokenDoc) {
-//             return res.status(401).json({
-//                 error: "Invalid refresh token",
-//                 message: "The provided refresh token is invalid or expired. Please login again to get new tokens.",
-//             })
-//         }
-
-//         // Get the user
-//         const user = await UserModel.findById(refreshTokenDoc.userId)
-
-//         if (!user) {
-//             return res.status(404).json({ error: "User not found" })
-//         }
-
-//         // Update client info if available
-//         if (req.clientInfo) {
-//             updateClientInfo(user, req.clientInfo)
-//             await user.save()
-//         }
-
-//         // Generate new access token
-//         const newAccessToken = await authUtils.generateAccessToken(user._id.toString(), user.tokenVersion)
-
-//         // Calculate access token expiration (1 hour from now)
-//         const accessTokenExpiration = new Date()
-//         accessTokenExpiration.setMinutes(accessTokenExpiration.getMinutes() + 2)
-
-//         // Generate new refresh token
-//         const newRefreshToken = authUtils.generateToken()
-//         const refreshTokenExpiration = new Date()
-//         refreshTokenExpiration.setDate(refreshTokenExpiration.getDate() + 14)
-
-//         // Store new tokens in database
-//         await UserToken.create({
-//             token: newAccessToken,
-//             refreshToken: newRefreshToken,
-//             userId: user._id,
-//             expiresAt: getTwoMinutesFromNow(),
-//             refreshExpiresAt: refreshTokenExpiration,
-//         })
-
-//         // Invalidate old refresh token
-//         await UserToken.updateOne({ _id: refreshTokenDoc._id }, { isRevoked: true })
-
-//         res.status(200).json({
-//             status: res.statusCode,
-//             accessToken: newAccessToken,
-//             refreshToken: newRefreshToken,
-//             data: {
-//                 id: user._id,
-//                 name: user.name,
-//                 email: user.email,
-//             },
-//         })
-//     } catch (error: any) {
-//         console.error("Error refreshing token:", error)
-//         res.status(500).json({
-//             error: "Failed to refresh token",
-//             details: error.message,
-//         })
-//     }
-// }
 
 export const UserrefreshToken = async (req: Request, res: Response) => {
     const { accessToken, refreshToken } = req.body
@@ -318,36 +264,34 @@ export const UserrefreshToken = async (req: Request, res: Response) => {
     if (!refreshToken) {
         console.log("Refresh token missing in request")
         return res.status(400).json({
-            status: 400,
-            error: "Refresh token is required"
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
+            message: "Refresh token is required"
         })
     }
 
     // If access token is provided, check if it's expired before refreshing
     if (accessToken) {
         try {
-            // Try to verify the token
             jwt.verify(accessToken, process.env.JWT_SECRET || "defaultsecret")
 
-            // If verification succeeds, token is still valid
             console.log("Access token is still valid, refresh not needed")
             return res.status(400).json({
-                status: 400,
-                error: "Current access token is still valid",
-                message: "Only expired tokens can be refreshed",
+                status: res.statusCode === 200,
+                statusCode: res.statusCode,
+                message: "Current access token is still valid",
             })
         } catch (error: any) {
             // Only proceed with refresh if token is expired
             if (error.name !== "TokenExpiredError") {
                 console.log("Invalid access token provided:", error.message)
                 return res.status(400).json({
-                    status: 400,
-                    error: "Invalid access token",
+                    status: res.statusCode === 200,
+                    statusCode: res.statusCode,
                     message: "The provided access token is invalid, not expired",
+                    error: error.message
                 })
             }
-            console.log("Access token is expired, proceeding with refresh")
-            // If token is expired, continue with refresh process
         }
     }
 
@@ -364,9 +308,9 @@ export const UserrefreshToken = async (req: Request, res: Response) => {
 
         if (!refreshTokenDoc) {
             return res.status(401).json({
-                status: 401,
-                error: "Invalid refresh token",
-                message: "The provided refresh token is invalid or expired. Please login again to get new tokens.",
+                status: res.statusCode === 200,
+                statusCode: res.statusCode,
+                message: "Invalid refresh token.Please login",
             })
         }
 
@@ -379,9 +323,9 @@ export const UserrefreshToken = async (req: Request, res: Response) => {
             await UserToken.updateOne({ _id: refreshTokenDoc._id }, { isRevoked: true })
 
             return res.status(404).json({
-                status: 404,
-                error: "User not found",
-                message: "The user associated with this token no longer exists."
+                status: res.statusCode === 200,
+                statusCode: res.statusCode,
+                message: "User not found",
             })
         }
 
@@ -421,23 +365,23 @@ export const UserrefreshToken = async (req: Request, res: Response) => {
 
         // Return success response with new tokens
         return res.status(200).json({
-            status: 200,
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
             message: "Token refreshed successfully",
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
-            expiresIn: 120, // 2 minutes in seconds
             data: {
-                id: user._id,
+                userId: user._id,
                 name: user.name,
                 email: user.email,
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken,
             },
         })
     } catch (error: any) {
         console.error("Error refreshing token:", error)
         return res.status(500).json({
-            status: 500,
-            error: "Failed to refresh token",
-            message: "An unexpected error occurred while refreshing your token.",
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
+            message: "Failed to refresh token",
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         })
     }

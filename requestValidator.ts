@@ -7,6 +7,7 @@ export interface RequiredParams {
     appversion: string
 }
 
+// Update the validateRequestParams function to handle both JSON and multipart/form-data requests
 export const validateRequestParams = (req: Request, res: Response, next: NextFunction) => {
     // Skip validation for specific paths like static files
 
@@ -19,6 +20,7 @@ export const validateRequestParams = (req: Request, res: Response, next: NextFun
         const formParams = {
             isStaging: req.body.isStaging,
             deviceid: req.body.deviceid,
+
             camefrom: req.body.camefrom,
             appversion: req.body.appversion,
         }
@@ -30,9 +32,8 @@ export const validateRequestParams = (req: Request, res: Response, next: NextFun
 
         if (missingParams.length > 0) {
             return res.status(400).json({
-                status: res.statusCode === 200,
-                statusCode: res.statusCode,
-                message: "Missing required parameters in form data",
+                success: false,
+                error: "Missing required parameters in form data",
                 missingParams,
             })
         }
@@ -46,9 +47,8 @@ export const validateRequestParams = (req: Request, res: Response, next: NextFun
     // Check if body exists and is an object
     if (!req.body || typeof req.body !== "object") {
         return res.status(400).json({
-            status: res.statusCode === 200,
-            statusCode: res.statusCode,
-            message: "Request body is required and must be an object",
+            success: false,
+            error: "Request body is required and must be an object",
         })
     }
 
@@ -56,6 +56,7 @@ export const validateRequestParams = (req: Request, res: Response, next: NextFun
     const bodyParams = {
         isStaging: req.body.isStaging,
         deviceid: req.body.deviceid,
+
         camefrom: req.body.camefrom,
         appversion: req.body.appversion,
     }
@@ -67,8 +68,7 @@ export const validateRequestParams = (req: Request, res: Response, next: NextFun
 
     if (missingParams.length > 0) {
         return res.status(400).json({
-            status: res.statusCode === 200,
-            statusCode: res.statusCode,
+            success: false,
             message: "Missing required parameters in request body",
             missingParams,
         })

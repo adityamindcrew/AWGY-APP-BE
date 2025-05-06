@@ -14,7 +14,6 @@ export const updateClientInfo = (user: any, clientInfo: any) => {
     user.clientInfo = {
         isStaging: clientInfo.isStaging === "true",
         deviceid: clientInfo.deviceid,
-        lang: Number.parseInt(clientInfo.lang),
         camefrom: clientInfo.camefrom.toLowerCase() === "ios" ? "ios" : "android",
         appversion: clientInfo.appversion,
         lastUpdated: new Date(),

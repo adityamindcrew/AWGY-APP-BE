@@ -10,7 +10,8 @@ export const addUpdateProfilePicture = async (req: Request, res: Response) => {
         if (!req.file) {
             return res.status(400).json({
                 success: false,
-                error: "No file uploaded",
+                message: "No file uploaded",
+
             })
         }
 
@@ -19,7 +20,7 @@ export const addUpdateProfilePicture = async (req: Request, res: Response) => {
         if (!user) {
             return res.status(404).json({
                 success: false,
-                error: "User not found",
+                message: "User not found",
             })
         }
 
@@ -44,20 +45,22 @@ export const addUpdateProfilePicture = async (req: Request, res: Response) => {
 
         return res.status(200).json({
             status: res.statusCode,
+            statusCode: res.statusCode,
             message: "Profile picture uploaded successfully",
-            profilePicture: relativePath,
             data: {
-                id: user._id,
+                userId: user._id,
                 name: user.name,
                 email: user.email,
+                profilePicture: relativePath,
             },
         })
     } catch (error: any) {
         console.error("Error uploading profile picture:", error)
         return res.status(500).json({
             success: false,
+            statusCode: res.statusCode,
+            message: error.message,
             error: "Failed to upload profile picture",
-            details: error.message,
         })
     }
 }
@@ -78,9 +81,10 @@ export const getProfile = async (req: Request, res: Response) => {
 
         // Return user data
         return res.status(200).json({
-            status: res.statusCode,
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
             data: {
-                id: user._id,
+                userId: user._id,
                 name: user.name,
                 email: user.email,
                 address: user.address,
@@ -95,8 +99,9 @@ export const getProfile = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error("Error fetching profile:", error)
         return res.status(500).json({
-            error: "Failed to fetch profile",
-            details: error.message,
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
+            message: error.message,
         })
     }
 }
@@ -132,10 +137,11 @@ export const UpdateProfileInfo = async (req: Request, res: Response) => {
         await user.save()
 
         return res.status(200).json({
-            status: res.statusCode,
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
             message: "Profile updated successfully",
             data: {
-                id: user._id,
+                userId: user._id,
                 name: user.name,
                 email: user.email,
                 address: user.address,
@@ -148,8 +154,10 @@ export const UpdateProfileInfo = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error("Error updating profile:", error)
         return res.status(500).json({
+            status: res.statusCode === 200,
+            statusCode: res.statusCode,
+            message: error.message,
             error: "Failed to update profile",
-            details: error.message,
         })
     }
 }

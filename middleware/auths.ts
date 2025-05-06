@@ -25,14 +25,14 @@ const generateAccessToken = (userId: string, tokenVersion: number): Promise<stri
     return new Promise((resolve, reject) => {
         const payload = {
             user: {
-                id: userId,
+                userId: userId,
                 tokenVersion: tokenVersion,
                 // Add a timestamp to ensure uniqueness
                 timestamp: Date.now(),
             },
         }
 
-        jwt.sign(payload, process.env.JWT_SECRET || "defaultsecret", { expiresIn: "2m" }, (err, token) => {
+        jwt.sign(payload, process.env.JWT_SECRET || "defaultsecret", { expiresIn: "24h" }, (err, token) => {
             if (err) reject(err)
             else resolve(token as string)
         })

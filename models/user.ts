@@ -16,7 +16,6 @@ export interface IUser extends Document {
     clientInfo: {
         isStaging: string
         deviceid: string
-        lang: string
         camefrom: camefromType
         appversion: string
         lastUpdated: Date
@@ -78,7 +77,6 @@ const userSchema: Schema<IUser> = new Schema(
         clientInfo: {
             isStaging: Boolean,
             deviceid: String,
-            lang: Number,
             camefrom: {
                 type: String,
                 enum: ["ios", "android", "web"],
