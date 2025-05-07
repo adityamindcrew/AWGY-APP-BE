@@ -10,7 +10,9 @@ export const addUpdateProfilePicture = async (req: Request, res: Response) => {
         if (!req.file) {
             return res.status(400).json({
                 success: false,
+                statusCode: res.statusCode,
                 message: "No file uploaded",
+                data: null
 
             })
         }
@@ -20,7 +22,9 @@ export const addUpdateProfilePicture = async (req: Request, res: Response) => {
         if (!user) {
             return res.status(404).json({
                 success: false,
+                statusCode: res.statusCode,
                 message: "User not found",
+                data: null
             })
         }
 
@@ -44,7 +48,7 @@ export const addUpdateProfilePicture = async (req: Request, res: Response) => {
         await user.save()
 
         return res.status(200).json({
-            status: res.statusCode,
+            status: true,
             statusCode: res.statusCode,
             message: "Profile picture uploaded successfully",
             data: {
@@ -59,8 +63,8 @@ export const addUpdateProfilePicture = async (req: Request, res: Response) => {
         return res.status(500).json({
             success: false,
             statusCode: res.statusCode,
-            message: error.message,
-            error: "Failed to upload profile picture",
+            message: "Failed to upload profile picture",
+            data: null,
         })
     }
 }
@@ -70,7 +74,12 @@ export const getProfile = async (req: Request, res: Response) => {
         // Get user with all fields except password
         const user = await UserModel.findById(req.user?.id).select("-password")
         if (!user) {
-            return res.status(404).json({ error: "User not found" })
+            return res.status(404).json({
+                success: false,
+                statusCode: res.statusCode,
+                message: "User not found",
+                data: null,
+            })
         }
 
         // // Update client info
@@ -81,7 +90,7 @@ export const getProfile = async (req: Request, res: Response) => {
 
         // Return user data
         return res.status(200).json({
-            status: res.statusCode === 200,
+            status: true,
             statusCode: res.statusCode,
             data: {
                 userId: user._id,
@@ -99,9 +108,10 @@ export const getProfile = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error("Error fetching profile:", error)
         return res.status(500).json({
-            status: res.statusCode === 200,
+            status: false,
             statusCode: res.statusCode,
             message: error.message,
+            data: null
         })
     }
 }
@@ -113,14 +123,22 @@ export const UpdateProfileInfo = async (req: Request, res: Response) => {
         // Validate required fields
         if (!address || !street || !city || !postalCode) {
             return res.status(400).json({
-                error: "Missing required fields. Address, street, city, and postal code are required.",
+                status: false,
+                statusCode: res.statusCode,
+                message: "Missing required fields. Address, street, city, and postal code are required.",
+                data: null
             })
         }
 
         // Get user
         const user = await UserModel.findById(req.user?.id)
         if (!user) {
-            return res.status(404).json({ error: "User not found" })
+            return res.status(404).json({
+                status: false,
+                statusCode: res.statusCode,
+                message: "User not found",
+                data: null
+            })
         }
 
         // Update client info
@@ -137,7 +155,7 @@ export const UpdateProfileInfo = async (req: Request, res: Response) => {
         await user.save()
 
         return res.status(200).json({
-            status: res.statusCode === 200,
+            status: true,
             statusCode: res.statusCode,
             message: "Profile updated successfully",
             data: {
@@ -154,10 +172,10 @@ export const UpdateProfileInfo = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error("Error updating profile:", error)
         return res.status(500).json({
-            status: res.statusCode === 200,
+            status: false,
             statusCode: res.statusCode,
-            message: error.message,
-            error: "Failed to update profile",
+            message: "Failed to update profile",
+            data: null,
         })
     }
 }

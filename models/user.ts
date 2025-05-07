@@ -11,7 +11,7 @@ export interface IUser extends Document {
     address: string
     street: string
     city: string
-    postalCode: number
+    postalCode: string
     profilePicture?: string
     clientInfo: {
         isStaging: string
@@ -66,9 +66,9 @@ const userSchema: Schema<IUser> = new Schema(
             match: [/^[a-zA-Z\s]+$/, "Name must only contain letters and spaces"],
         },
         postalCode: {
-            type: Number,
+            type: String,
             required: true,
-            minlength: [10, "postalCode must be at least 10 characters long"],
+            match: [/^\d{5}$/, "Postal code must be exactly 5 digits"],
         },
         profilePicture: {
             type: String,

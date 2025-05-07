@@ -13,7 +13,8 @@ const router = express.Router()
 router.post("/register", registerUser)
 
 // Login Endpoint - Modified to handle refresh tokens as requested
-router.post("/login", loginUser)
+router.post("/login",
+    loginUser)
 
 // Forgot Password Endpoint
 router.post("/forgot-password", async (req: Request, res: Response): Promise<any> => {

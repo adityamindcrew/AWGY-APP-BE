@@ -2,7 +2,7 @@ export const refreshTokenExpiration = new Date()
 refreshTokenExpiration.setDate(refreshTokenExpiration.getDate() + 14)
 
 export const getTwoMinutesFromNow = () => {
-    return new Date(Date.now() + 2 * 60 * 1000); // 2 minutes in milliseconds
+    return new Date(Date.now() + 24 * 60 * 60 * 1000);
 }
 
 export const updateClientInfo = (user: any, clientInfo: any) => {

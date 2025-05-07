@@ -5,10 +5,10 @@ import { validateRequestParams } from "../middleware/requestValidator"
 
 
 const router = express.Router()
-router.put("/update-profile", UpdateProfileInfo)
+router.put("/updateprofile", UpdateProfileInfo)
 
 router.post(
-    "/profile-picture",
+    "/profilepicture",
     uploadProfilePictureMulter,
     handleMulterError,
     validateRequestParams,

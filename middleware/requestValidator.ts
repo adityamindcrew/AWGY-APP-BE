@@ -10,7 +10,7 @@ export interface RequiredParams {
 export const validateRequestParams = (req: Request, res: Response, next: NextFunction) => {
     // Skip validation for specific paths like static files
 
-    if (req.path == "/api/profile" || req.path == "/api/profile/profile-picture" || req.path.startsWith("/uploads/") || req.path === "/health" || req.path === "/favicon.ico") {
+    if (req.path == "/api/profile" || req.path == "/api/profile/profilepicture" || req.path.startsWith("/uploads/") || req.path === "/health" || req.path === "/favicon.ico") {
         return next()
     }
     // For multipart/form-data requests (file uploads)
@@ -30,7 +30,7 @@ export const validateRequestParams = (req: Request, res: Response, next: NextFun
 
         if (missingParams.length > 0) {
             return res.status(400).json({
-                status: res.statusCode === 200,
+                status: false,
                 statusCode: res.statusCode,
                 message: "Missing required parameters in form data",
                 missingParams,
@@ -46,9 +46,10 @@ export const validateRequestParams = (req: Request, res: Response, next: NextFun
     // Check if body exists and is an object
     if (!req.body || typeof req.body !== "object") {
         return res.status(400).json({
-            status: res.statusCode === 200,
+            status: false,
             statusCode: res.statusCode,
             message: "Request body is required and must be an object",
+            data: null
         })
     }
 
@@ -67,20 +68,16 @@ export const validateRequestParams = (req: Request, res: Response, next: NextFun
 
     if (missingParams.length > 0) {
         return res.status(400).json({
-            status: res.statusCode === 200,
+            status: false,
             statusCode: res.statusCode,
             message: "Missing required parameters in request body",
-            missingParams,
+            data: null
         })
     }
-
-    // Store validated parameters in request object for use in route handlers
     req.clientInfo = bodyParams as RequiredParams
 
     next()
 }
-
-// Extend Express Request type to include clientInfo
 declare global {
     namespace Express {
         interface Request {

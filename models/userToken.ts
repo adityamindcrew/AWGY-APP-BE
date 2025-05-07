@@ -4,6 +4,8 @@ export interface IUserToken extends Document {
     token: string
     refreshToken: string
     tokenType: "access" | "refresh"
+    ipAddress: string
+    userAgent: string
     userId: mongoose.Schema.Types.ObjectId
     expiresAt: Date
     refreshExpiresAt: Date
@@ -14,15 +16,18 @@ export interface IUserToken extends Document {
 
 const UserTokenSchema: Schema = new Schema(
     {
-        token: {
-            type: String,
-            required: true,
-            unique: true,
-        },
         refreshToken: {
             type: String,
             required: true,
             unique: false,
+        },
+        ipAddress: {
+            type: String,
+            default: null
+        },
+        userAgent: {
+            type: String,
+            default: null
         },
         userId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -33,14 +38,11 @@ const UserTokenSchema: Schema = new Schema(
             type: Date,
             required: true,
         },
-        refreshExpiresAt: {
-            type: Date,
-            required: true,
-        },
         isRevoked: {
             type: Boolean,
             default: false,
         },
+        createdAt: { type: Date, default: Date.now },
     },
     {
         timestamps: true,
@@ -48,5 +50,5 @@ const UserTokenSchema: Schema = new Schema(
 )
 
 // Create an index to automatically remove expired tokens
-UserTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 86400 })
+UserTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 export default mongoose.model<IUserToken>("UserToken", UserTokenSchema)
