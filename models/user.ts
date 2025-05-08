@@ -46,6 +46,7 @@ const userSchema: Schema<IUser> = new Schema(
             type: String,
             required: true,
             match: [/^[a-zA-Z\s]+$/, "Name must only contain letters and spaces"],
+            maxlength: [25, "name cannot exceed 25 characters"],
         },
         tokenVersion: {
             type: Number,
@@ -54,25 +55,30 @@ const userSchema: Schema<IUser> = new Schema(
         address: {
             type: String,
             required: true,
+            maxlength: [50, "Address cannot exceed 50 characters"],
         },
         street: {
             type: String,
             required: true,
             match: [/^[a-zA-Z\s]+$/, "Name must only contain letters and spaces"],
+            maxlength: [50, "Street cannot exceed 50 characters"],
         },
+
         city: {
             type: String,
             required: true,
             match: [/^[a-zA-Z\s]+$/, "Name must only contain letters and spaces"],
+            maxlength: [50, "Street cannot exceed 50 characters"],
+
         },
         postalCode: {
             type: String,
             required: true,
-            match: [/^\d{5}$/, "Postal code must be exactly 5 digits"],
+            match: [/^\d{6}$/, "Postal code must be exactly 6 digits"],
         },
         profilePicture: {
             type: String,
-            default: null,
+            default: 'person_image.png',
         },
         clientInfo: {
             isStaging: Boolean,

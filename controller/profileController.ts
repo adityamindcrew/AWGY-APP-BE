@@ -35,7 +35,7 @@ export const addUpdateProfilePicture = async (req: Request, res: Response) => {
 
         // Delete old profile picture if exists
         if (user.profilePicture) {
-            const oldPicturePath = path.join(__dirname, "uploads", "profile-pictures", user.profilePicture)
+            const oldPicturePath = path.join(__dirname, "uploads", "profile_pictures", user.profilePicture)
             console.log(">>>>>>>>>>>>>>>>>>>>", oldPicturePath)
             if (fs.existsSync(oldPicturePath)) {
                 fs.unlinkSync(oldPicturePath)

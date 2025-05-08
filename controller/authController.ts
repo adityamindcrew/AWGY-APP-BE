@@ -1,47 +1,31 @@
-import bcrypt from "bcryptjs";
-import { type Request, type Response } from "express";
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../middleware/auths";
-import UserModel from "../models/user";
-import { default as UserToken } from "../models/userToken";
-import { updateClientInfo } from "../utils/helper";
-
+import bcrypt from "bcryptjs"
+import type { Request, Response } from "express"
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../middleware/auths"
+import UserModel from "../models/user"
+import { default as UserToken } from "../models/userToken"
+import { updateClientInfo } from "../utils/helper"
+import { validateLogin, validateRegistration } from "../utils/validation"
 
 export const registerUser = async (req: Request, res: Response): Promise<any> => {
     const { email, password, name, address, street, city, postalCode } = req.body
 
-    if (!email || !password || !name) {
-        return res.status(400).json({
-            status: false,
-            statusCode: res.statusCode,
-            message: "Email, password, and name are required",
-            data: null
-        })
-    }
+    // Validate registration data
+    const validationError = validateRegistration({
+        email,
+        password,
+        name,
+        address,
+        street,
+        city,
+        postalCode,
+    })
 
-    if (!/^[a-zA-Z\s]+$/.test(name)) {
+    if (validationError) {
         return res.status(400).json({
             status: false,
-            statusCode: res.statusCode,
-            message: "Name must be in words (no numbers)",
-            data: null
-        })
-    }
-
-    if (!/\S+@\S+\.\S+/.test(email)) {
-        return res.status(400).json({
-            status: false,
-            statusCode: res.statusCode,
-            message: "Invalid email format",
-            data: null
-        })
-    }
-
-    if (password.length < 6) {
-        return res.status(400).json({
-            status: false,
-            statusCode: res.statusCode,
-            message: "Password must be at least 6 characters long",
-            data: null
+            statusCode: 400,
+            message: validationError,
+            data: null,
         })
     }
 
@@ -51,21 +35,22 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
         if (existingUser) {
             return res.status(409).json({
                 status: false,
-                statusCode: res.statusCode,
+                statusCode: 409,
                 message: "Email already exists",
-                data: null
-            })
-        }
-        if (!req.clientInfo) {
-            return res.status(400).json({
-                status: false,
-                statusCode: res.statusCode,
-                message: "Client info is required",
-                data: null
+                data: null,
             })
         }
 
-        const clientInfo = req.clientInfo;
+        if (!req.clientInfo) {
+            return res.status(400).json({
+                status: false,
+                statusCode: 400,
+                message: "Client info is required",
+                data: null,
+            })
+        }
+
+        const clientInfo = req.clientInfo
         const hashedPassword = await bcrypt.hash(password, 10)
         const newUser = await UserModel.create({
             email,
@@ -84,8 +69,9 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
                 lastUpdated: new Date(),
             },
         })
+
         newUser.tokenVersion = (newUser.tokenVersion || 0) + 1
-        await newUser.save();
+        await newUser.save()
 
         // Generate fresh tokens
         const accessToken = await generateAccessToken({ id: newUser._id })
@@ -95,13 +81,13 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
             userId: newUser._id,
             refreshToken: refreshToken,
             ipAddress: req.ip,
-            userAgent: req.headers['user-agent'],
+            userAgent: req.headers["user-agent"],
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        });
+        })
 
         res.status(200).json({
             status: true,
-            statusCode: res.statusCode,
+            statusCode: 200,
             message: "User registered successfully",
             data: {
                 userId: newUser._id,
@@ -111,6 +97,7 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
                 street: newUser.street,
                 city: newUser.city,
                 postalCode: newUser.postalCode,
+                profilePicture: newUser.profilePicture,
                 accessToken,
                 refreshToken,
                 createdAt: newUser.createdAt,
@@ -121,9 +108,9 @@ export const registerUser = async (req: Request, res: Response): Promise<any> =>
         console.error("Error during registration:", error)
         res.status(500).json({
             status: false,
-            statusCode: res.statusCode,
+            statusCode: 500,
             message: error.message,
-            data: null
+            data: null,
         })
     }
 }
@@ -132,13 +119,15 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     const { email, password } = req.body
     console.log("Login attempt for:", email)
 
-    if (!email || !password) {
+    // Validate login data
+    const validationError = validateLogin({ email, password })
+
+    if (validationError) {
         return res.status(400).json({
             status: false,
-            statusCode: res.statusCode,
-            message: "Email and password are required",
-            data: null
-
+            statusCode: 400,
+            message: validationError,
+            data: null,
         })
     }
 
@@ -148,11 +137,9 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         if (!user) {
             return res.status(404).json({
                 status: false,
-                statusCode: res.statusCode,
+                statusCode: 404,
                 message: "User not found",
-                data: null
-
-
+                data: null,
             })
         }
 
@@ -161,10 +148,9 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         if (!isPasswordValid) {
             return res.status(401).json({
                 status: false,
-                statusCode: res.statusCode,
+                statusCode: 401,
                 message: "Invalid password",
-                data: null
-
+                data: null,
             })
         }
 
@@ -173,10 +159,9 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
             console.error("Client info is undefined in login route")
             return res.status(400).json({
                 status: false,
-                statusCode: res.statusCode,
+                statusCode: 400,
                 message: "Client info is required",
-                data: null
-
+                data: null,
             })
         }
 
@@ -189,7 +174,6 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         user.tokenVersion = (user.tokenVersion || 0) + 1
         await user.save()
 
-
         // Generate fresh tokens
         const accessToken = await generateAccessToken({ id: user._id })
         const refreshToken = await generateRefreshToken({ id: user._id })
@@ -198,14 +182,14 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
             userId: user._id,
             refreshToken: refreshToken,
             ipAddress: req.ip,
-            userAgent: req.headers['user-agent'],
+            userAgent: req.headers["user-agent"],
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        });
+        })
 
         // Return success response with tokens
         return res.status(200).json({
             status: true,
-            statusCode: res.statusCode,
+            statusCode: 200,
             message: "Login successful",
             data: {
                 userId: user._id,
@@ -215,7 +199,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
                 street: user.street,
                 city: user.city,
                 postalCode: user.postalCode,
-                profilePicture: user.profilePicture || null,
+                profilePicture: user.profilePicture || "person_image.png",
                 accessToken,
                 refreshToken,
                 createdAt: user.createdAt,
@@ -226,9 +210,9 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         console.error("Error during login:", error)
         return res.status(500).json({
             status: false,
-            statusCode: res.statusCode,
+            statusCode: 500,
             message: "An unexpected error occurred during login.",
-            data: null
+            data: null,
         })
     }
 }
@@ -262,9 +246,9 @@ export const logoutUser = async (req: Request, res: Response) => {
 
         res.status(200).json({
             status: true,
-            statusCode: res.statusCode,
+            statusCode: 200,
             message: "Logged out successfully",
-            data: null
+            data: null,
         })
     } catch (error: any) {
         console.error("Error during logout:", error)
@@ -278,34 +262,33 @@ export const logoutUser = async (req: Request, res: Response) => {
 }
 
 export const UserrefreshToken = async (req: Request, res: Response) => {
-    const refreshToken = req.body.refreshToken;
-    if (!refreshToken) return res.status(401).json({
-        status: false,
-        statusCode: res.status,
-        message: 'Refresh token required',
-        data: null
-
-    });
+    const refreshToken = req.body.refreshToken
+    if (!refreshToken)
+        return res.status(401).json({
+            status: false,
+            statusCode: 401,
+            message: "Refresh token required",
+            data: null,
+        })
 
     try {
-
-        const userData = await verifyRefreshToken(refreshToken);
+        const userData = await verifyRefreshToken(refreshToken)
         const newAccessToken = await generateAccessToken({ id: userData.id })
-        console.log('first newAccessToken', newAccessToken)
+        console.log("first newAccessToken", newAccessToken)
         return res.json({
             status: true,
             statusCode: 200,
-            message: 'Refresh token successfully',
+            message: "Refresh token successfully",
             data: {
-                accessToken: newAccessToken
-            }
-        });
+                accessToken: newAccessToken,
+            },
+        })
     } catch (err: any) {
         return res.status(403).json({
             status: false,
             statusCode: 403,
             message: "Invalid refresh token",
-            data: null
-        });
+            data: null,
+        })
     }
 }

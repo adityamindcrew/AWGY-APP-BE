@@ -6,7 +6,7 @@ import path from "path"
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, "..", "uploads")
-const profilePicsDir = path.join(uploadsDir, "profile-pictures")
+const profilePicsDir = path.join(uploadsDir, "profile_pictures")
 
     // Ensure directories exist
     ;[uploadsDir, profilePicsDir].forEach((dir) => {
@@ -24,7 +24,7 @@ const profilePictureStorage = multer.diskStorage({
         // Generate a unique filename with original extension
         const uniqueSuffix = crypto.randomBytes(16).toString("hex")
         const fileExt = path.extname(file.originalname)
-        cb(null, `profile-${uniqueSuffix}${fileExt}`)
+        cb(null, `profile_${uniqueSuffix}${fileExt}`)
     },
 })
 
