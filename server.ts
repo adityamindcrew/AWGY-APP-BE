@@ -5,7 +5,10 @@ import path from "path"
 import { authenticateJWT } from "./middleware/auths"
 import { validateRequestParams } from "./middleware/requestValidator"
 import authRouter from "./routes/auth"
-import profileRouter from "./routes/profile"
+import { getApiPlaidRouter, plaidRouter } from "./routes/plaid"
+import { getApiRouter, router } from "./routes/profile"
+// import getApiRouter from "./routes/getApiRouter"
+import watchlistRouter from "./routes/watchlist"
 
 // Load environment variables
 dotenv.config()
@@ -27,8 +30,8 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")))
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`)
-    console.log("Headers:", JSON.stringify(req.headers, null, 2))
+    // console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`)
+    // console.log("Headers:", JSON.stringify(req.headers, null, 2))
     next()
 })
 
@@ -36,10 +39,14 @@ app.use((req, res, next) => {
 // Define routes
 
 // Apply validateRequestParams middleware before routes
+app.use("/api/profile", authenticateJWT, getApiRouter)
+app.use("/api/plaid", authenticateJWT, getApiPlaidRouter)
 app.use(validateRequestParams)
 app.use("/api/auth", authRouter)
-app.use(authenticateJWT)
-app.use("/api/profile", profileRouter);
+
+app.use("/api/profile", authenticateJWT, router)
+app.use("/api/plaid", authenticateJWT, plaidRouter)
+app.use("/api/watchlist", authenticateJWT, watchlistRouter)
 
 mongoose
     .connect(mongoURI)

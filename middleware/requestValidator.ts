@@ -10,7 +10,7 @@ export interface RequiredParams {
 export const validateRequestParams = (req: Request, res: Response, next: NextFunction) => {
     // Skip validation for specific paths like static files
 
-    if (req.path == "/api/profile" || req.path == "/api/profile/profilepicture" || req.path.startsWith("/uploads/") || req.path === "/health" || req.path === "/favicon.ico") {
+    if (req.path == "/api/profile/profilepicture" || req.path.startsWith("/uploads/")) {
         return next()
     }
     // For multipart/form-data requests (file uploads)
@@ -70,7 +70,7 @@ export const validateRequestParams = (req: Request, res: Response, next: NextFun
         return res.status(400).json({
             status: false,
             statusCode: res.statusCode,
-            message: "Missing required parameters in request body",
+            message: `Missing required parameters ${missingParams.join(", ")} in request body`,
             data: null
         })
     }

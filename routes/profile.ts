@@ -5,6 +5,8 @@ import { validateRequestParams } from "../middleware/requestValidator"
 
 
 const router = express.Router()
+
+
 router.put("/updateprofile", UpdateProfileInfo)
 
 router.post(
@@ -15,6 +17,10 @@ router.post(
     addUpdateProfilePicture
 )
 
-router.get("/", getProfile)
 
-export default router
+const getApiRouter = express.Router()
+getApiRouter.get("/", getProfile)
+
+
+export { getApiRouter, router }; //module.exports = { getApiRouter, router }
+
