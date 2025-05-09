@@ -95,7 +95,7 @@ export const getHoldings = async (req: Request, res: Response): Promise<any> => 
             console.log("Accesstoken get successfully", item.accessToken)
             try {
                 const response = await plaidClient.investmentsHoldingsGet({
-                    access_token: 'access-sandbox-755c42ce-188e-4086-8f00-78c5e7805a26',
+                    access_token: item.accessToken,
                 })
                 console.log('first response', item.accessToken)
                 const holdings = response.data.holdings
