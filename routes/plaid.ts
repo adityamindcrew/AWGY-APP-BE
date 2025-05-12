@@ -7,10 +7,6 @@ const plaidRouter = express.Router()
 // All routes require authentication
 plaidRouter.use(authenticateJWT)
 
-// Create a link token for Plaid Link
-// Add this route to routes/plaid.ts
-
-// Create a link token specifically for iOS
 plaidRouter.post("/link-token", createLinkTokenForIOS);
 plaidRouter.post("/create-link-token", createLinkToken)
 

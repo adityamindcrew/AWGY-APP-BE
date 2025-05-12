@@ -20,7 +20,7 @@ export const addToWatchlist = async (req: Request, res: Response): Promise<any> 
         // Verify symbol exists with FinnHub
         try {
             const symbolData = await finnhubClient.symbolSearch(symbol)
-
+            console.log('first symbolData symbolData', symbolData)
             if (!symbolData.result || symbolData.result.length === 0) {
                 return sendValidationError(res, "Invalid symbol. Please enter a valid stock symbol.")
             }

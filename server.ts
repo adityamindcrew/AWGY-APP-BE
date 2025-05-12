@@ -17,15 +17,54 @@ const app = express()
 const port = process.env.PORT
 const mongoURI = process.env.MONGO_URI || ""
 app.use(express.json())
-// Removed cookie parser as it's not needed for mobile devices
-// app.use(
-//     cors({
-//         origin: process.env.FRONTEND_URL || "http://localhost:3000",
-//         credentials: true, // Still allow credentials for potential future use
-//     }),
-// )
 
-// Serve static files from the uploads directory
+
+app.get("/.well-known/apple-app-site-association", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+
+    const teamId = process.env.TEAMID
+    const bundleId = process.env.BUNDLEID
+    const associationFile = {
+        "applinks": {
+            "apps": [],
+            "details": [
+                {
+                    "appID": [`${teamId}.${bundleId}`],
+                    "paths": [
+                        {
+                            "/": ["/com-mind-earningscalendar/redirect"],
+                            "comment": "Oauth redirect form plaid"
+
+                        },
+                    ]
+                }
+            ]
+        }
+    };
+
+    // Send the response
+    res.send(associationFile);
+});
+
+app.get("/.well-known/oauth-return", (req, res) => {
+    res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Redirecting to app...</title>
+      <meta http-equiv="refresh" content="0; URL=yourapp://plaid-oauth-return${req.url.includes('?') ? '?' + req.url.split('?')[1] : ''}">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+      <p>Redirecting to your app...</p>
+      <script>
+        window.location.href = "yourapp://plaid-oauth-return${req.url.includes('?') ? '?' + req.url.split('?')[1] : ''}";
+      </script>
+    </body>
+    </html>
+  `);
+});
 app.use("/uploads", express.static(path.join(__dirname, "uploads")))
 
 // Debug middleware to log all requests
@@ -36,9 +75,6 @@ app.use((req, res, next) => {
 })
 
 
-// Define routes
-
-// Apply validateRequestParams middleware before routes
 app.use("/api/profile", authenticateJWT, getApiRouter)
 app.use("/api/plaid", authenticateJWT, getApiPlaidRouter)
 app.use(validateRequestParams)

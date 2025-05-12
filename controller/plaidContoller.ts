@@ -38,7 +38,8 @@ export const createLinkTokenForIOS = async (req: Request, res: Response): Promis
                 client_user_id: userId,
             },
             products: [Products.Investments],
-            additional_consented_products: [Products.Auth]
+            additional_consented_products: [Products.Auth],
+            redirect_uri: process.env.PLAID_REDIRECT_URL,
         };
 
         console.log("Creating Plaid link token with request:", JSON.stringify(request));
