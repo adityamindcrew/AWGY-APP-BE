@@ -1,10 +1,72 @@
 import type { Request, Response } from "express";
-import { SandboxPublicTokenCreateRequest } from "plaid";
+import { CountryCode, LinkTokenCreateRequest, Products, SandboxPublicTokenCreateRequest } from "plaid";
 import plaidClient from "../config/plaid";
 import PlaidItem from "../models/plaiditem";
 import { sendNotFound, sendServerError, sendSuccess, sendValidationError } from "../utils/response-handler";
 
 // Create a link token for Plaid Link
+// Add this function to controller/plaidController.ts
+
+// Create a link token specifically for iOS
+export const createLinkTokenForIOS = async (req: Request, res: Response): Promise<any> => {
+    try {
+        // Get user ID from authenticated request
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return sendUnauthorized(res, "User not authenticated");
+        }
+
+        // Get client info from request
+        const clientInfo = req.clientInfo;
+        if (!clientInfo) {
+            return sendValidationError(res, "Client info is required");
+        }
+
+        // Verify this is coming from iOS
+        if (clientInfo.camefrom !== "ios") {
+            return sendValidationError(res, "This endpoint is for iOS clients only");
+        }
+
+        const request: LinkTokenCreateRequest = {
+            client_id: process.env.PLAID_CLIENT_ID,
+            secret: process.env.PLAID_SECRET || "",
+            client_name: "boston",
+            country_codes: [CountryCode.Us],
+            language: "en",
+            user: {
+                client_user_id: userId,
+            },
+            products: [Products.Investments],
+            additional_consented_products: [Products.Auth]
+        };
+
+        console.log("Creating Plaid link token with request:", JSON.stringify(request));
+
+        // Call Plaid API to create link token
+        const response = await plaidClient.linkTokenCreate(request);
+
+        console.log("Plaid link token created successfully");
+
+        // Return the link token to the client
+        return sendSuccess(res, "Link token created successfully for iOS", {
+            link_token: response.data.link_token,
+            expiration: response.data.expiration
+        });
+    } catch (error: any) {
+        console.error("Error creating link token for iOS:", error);
+
+        // Provide detailed error information for debugging
+        let errorDetails = "Unknown error";
+        if (error.response && error.response.data) {
+            errorDetails = JSON.stringify(error.response.data);
+        } else if (error.message) {
+            errorDetails = error.message;
+        }
+
+        return sendServerError(res, `Error creating Plaid link token: ${errorDetails}`);
+    }
+};
 export const createLinkToken = async (req: Request, res: Response): Promise<any> => {
     try {
         const userId = req.user?.id;
