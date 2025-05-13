@@ -52,14 +52,16 @@ export async function authenticateJWT(req: Request, res: Response, next: NextFun
                 return res.status(401).json({ error: "Invalid token version" })
             }
         }
-
-        // Token is valid, set user in request
         req.user = { id: decoded.user.id }
         console.log("Valid JWT token, user authenticated:", req.user.id)
         return next()
     } catch (err) {
-        console.log('first wrrrrr', err)
-        return res.status(401).json({ message: 'Access token invalid or expired' });
+        return res.status(401).json({
+            status: false,
+            statusCode: res.statusCode,
+            message: 'Access token invalid or expired',
+            data: null
+        });
     }
 }
 
