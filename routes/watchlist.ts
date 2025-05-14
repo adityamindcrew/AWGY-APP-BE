@@ -23,9 +23,9 @@ router.get("/", getWatchlist)
 router.put("/status", updateWatchlistItemStatus)
 
 // Get earnings data for watchlist symbols
-router.get("/earnings", getEarningsData)
+router.post("/earnings", getEarningsData)
 
 // Get real-time quotes for watchlist symbols
-router.get("/quotes", getQuotes)
+router.post("/quotes", getQuotes)
 
 export default router
