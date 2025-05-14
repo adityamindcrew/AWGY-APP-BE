@@ -117,29 +117,47 @@ export const updateWatchlistItemStatus = async (req: Request, res: Response): Pr
 export const getEarningsData = async (req: Request, res: Response): Promise<any> => {
     try {
         const userId = req.user?.id
+        const currentSymbol = req.body.symbol
 
         if (!userId) {
             return sendUnauthorized(res, "User not authenticated")
         }
 
-        // Get user's accepted watchlist symbols
-        const watchlist = await Watchlist.findOne({ userId })
+        let symbolData;
+        let acceptedSymbols = [];
+        if (currentSymbol) {
+            symbolData = await finnhubClient.symbolSearch(currentSymbol)
+            if (symbolData.count === 0) {
+                return sendValidationError(res, "Invalid symbol. Please enter a valid stock symbol.")
+            }
 
-        if (!watchlist || !watchlist.symbols || watchlist.symbols.length === 0) {
-            return sendSuccess(res, "No symbols in watchlist", { earnings: [] })
+            if (!symbolData.result || symbolData.result.length === 0) {
+                return sendValidationError(res, "Invalid symbol. Please enter a valid stock symbol.")
+            }
+
+            const foundSymbol = symbolData.result.find((item: any) => item.symbol === currentSymbol.toUpperCase());
+            if (!foundSymbol) {
+                return sendValidationError(res, "Invalid symbol. Please enter a valid stock symbol.")
+            }
+            acceptedSymbols = [foundSymbol].map((item) => item.symbol);;
+        } else {
+            const watchlist = await Watchlist.findOne({ userId })
+
+            if (!watchlist || !watchlist.symbols || watchlist.symbols.length === 0) {
+                return sendSuccess(res, "No symbols in watchlist", { earnings: [] })
+            }
+
+            acceptedSymbols = watchlist.symbols.filter((item) => item.status === "accepted").map((item) => item.symbol);
+
+            if (acceptedSymbols.length === 0) {
+                return sendSuccess(res, "No accepted symbols in watchlist", { earnings: [] })
+            }
         }
-
-        const acceptedSymbols = watchlist.symbols.filter((item) => item.status === "accepted").map((item) => item.symbol)
-
-        if (acceptedSymbols.length === 0) {
-            return sendSuccess(res, "No accepted symbols in watchlist", { earnings: [] })
-        }
-
-        // Fetch earnings data for each symbol
-        const earningsPromises = acceptedSymbols.map(async (symbol) => {
+        const earningsPromises = acceptedSymbols.map(async (symbol: any) => {
             try {
+
                 const data = await finnhubClient.companyEarnings(symbol)
-                return { symbol, earnings: data }
+                return { symbol, data }
             } catch (error) {
                 return { symbol, error: "Failed to fetch earnings" }
             }
@@ -147,7 +165,7 @@ export const getEarningsData = async (req: Request, res: Response): Promise<any>
 
         const earningsData = await Promise.all(earningsPromises)
 
-        return sendSuccess(res, "Earnings data retrieved successfully", { earnings: earningsData })
+        return sendSuccess(res, "Earnings data retrieved successfully", currentSymbol ? earningsData[0].data : earningsData)
     } catch (error: any) {
         console.error("Error fetching earnings:", error)
         return sendServerError(res, error)
@@ -179,7 +197,7 @@ export const getQuotes = async (req: Request, res: Response): Promise<any> => {
         // Fetch quotes for each symbol
         const quotePromises = acceptedSymbols.map(async (symbol) => {
             try {
-                const data = await finnhubClient.quote(symbol)
+                const data = await finnhubClient.quote("AAPL")
                 return {
                     symbol,
                     quote: {
@@ -194,7 +212,7 @@ export const getQuotes = async (req: Request, res: Response): Promise<any> => {
                     },
                 }
             } catch (error) {
-                return { symbol, error: "Failed to fetch quote" }
+                return { error: "Failed to fetch quote" }
             }
         })
 

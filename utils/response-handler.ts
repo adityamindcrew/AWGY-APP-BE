@@ -1,8 +1,5 @@
 import type { Response } from "express"
 
-/**
- * Standard API response format
- */
 export interface ApiResponse {
     status: boolean
     statusCode: number
@@ -12,13 +9,6 @@ export interface ApiResponse {
     details?: string
 }
 
-/**
- * Creates a standardized success response
- * @param res Express response object
- * @param message Success message
- * @param data Optional data to include in response
- * @param statusCode HTTP status code (defaults to 200)
- */
 export const sendSuccess = (res: Response, message: string, data?: any, statusCode = 200): Response<ApiResponse> => {
     return res.status(statusCode).json({
         status: true,
@@ -28,13 +18,6 @@ export const sendSuccess = (res: Response, message: string, data?: any, statusCo
     })
 }
 
-/**
- * Creates a standardized error response
- * @param res Express response object
- * @param message Error message
- * @param statusCode HTTP status code (defaults to 400)
- * @param details Optional error details (only included in development)
- */
 export const sendError = (
     res: Response,
     message: string,
@@ -45,6 +28,7 @@ export const sendError = (
         status: false,
         statusCode,
         message,
+        data: {},
     }
 
     // Only include error details in development environment
@@ -55,29 +39,14 @@ export const sendError = (
     return res.status(statusCode).json(response)
 }
 
-/**
- * Creates a standardized validation error response
- * @param res Express response object
- * @param message Validation error message
- */
 export const sendValidationError = (res: Response, message: string): Response<ApiResponse> => {
     return sendError(res, message, 400)
 }
 
-/**
- * Creates a standardized not found error response
- * @param res Express response object
- * @param message Not found error message
- */
 export const sendNotFound = (res: Response, message = "Resource not found"): Response<ApiResponse> => {
     return sendError(res, message, 404)
 }
 
-/**
- * Creates a standardized unauthorized error response
- * @param res Express response object
- * @param message Unauthorized error message
- */
 export const sendUnauthorized = (res: Response, message = "Unauthorized access"): Response<ApiResponse> => {
     return sendError(res, message, 401)
 }

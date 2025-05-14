@@ -39,7 +39,7 @@ export const createLinkTokenForIOS = async (req: Request, res: Response): Promis
             },
             products: [Products.Investments],
             additional_consented_products: [Products.Auth],
-            // redirect_uri: process.env.PLAID_REDIRECT_URL,
+            // redirect_uri: "earningscalendar://plaid-oauth",
         };
 
         console.log("Creating Plaid link token with request:", JSON.stringify(request));
